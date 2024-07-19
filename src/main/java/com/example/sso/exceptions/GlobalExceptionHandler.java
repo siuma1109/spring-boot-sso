@@ -1,39 +1,47 @@
 package com.example.sso.exceptions;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.context.support.DefaultMessageSourceResolvable;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+import com.example.sso.responses.GenericResponse;
 
 @ControllerAdvice
-public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+public class GlobalExceptionHandler {
 
-    @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(
-            MethodArgumentNotValidException ex,
-            HttpHeaders headers,
-            HttpStatusCode status,
-            WebRequest request) {
-        Map<String, List<String>> body = new HashMap<>();
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<GenericResponse> handleAllExceptions(Exception ex) {
+        GenericResponse genericResponse = new GenericResponse();
+        genericResponse.setMessage(ex.getMessage());
+        return new ResponseEntity<>(
+                genericResponse.error(null),
+                HttpStatus.BAD_REQUEST
+        );
+    }
 
-        List<String> errors = ex.getBindingResult()
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<GenericResponse> handleAllExceptions(ValidationException ex) {
+        GenericResponse genericResponse = new GenericResponse();
+        genericResponse.setMessage(ex.getMessage());
+        return new ResponseEntity<>(
+                genericResponse.error(ex.getErrors()),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<GenericResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+        GenericResponse genericResponse = new GenericResponse();
+        Map<String, String> errors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .collect(Collectors.toList());
-
-        body.put("errors", errors);
-
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+                .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
+        return new ResponseEntity<>(genericResponse.error(errors), HttpStatus.BAD_REQUEST);
     }
 }

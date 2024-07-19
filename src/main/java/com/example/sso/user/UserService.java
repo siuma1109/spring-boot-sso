@@ -1,12 +1,14 @@
 package com.example.sso.user;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
+
+import com.example.sso.exceptions.ValidationException;
 
 import jakarta.transaction.Transactional;
 
@@ -24,10 +26,15 @@ public class UserService {
     }
 
     public User addNewUser(RegisterUserDto registerUserDto) {
+        Map<String, String> errors = new HashMap<>();
         Optional<User> userByEmail = userRepository.findUserByEmail(registerUserDto.getEmail());
 
         if (userByEmail.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email Taken");
+            errors.put("email", "Email is already taken");
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
         }
 
         return userRepository.save(new User(
