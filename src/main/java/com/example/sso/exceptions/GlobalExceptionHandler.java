@@ -17,31 +17,43 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<GenericResponse> handleAllExceptions(Exception ex) {
-        GenericResponse genericResponse = new GenericResponse();
-        genericResponse.setMessage(ex.getMessage());
         return new ResponseEntity<>(
-                genericResponse.error(null),
+                GenericResponse
+                        .builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .build(),
                 HttpStatus.BAD_REQUEST
         );
     }
 
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<GenericResponse> handleAllExceptions(ValidationException ex) {
-        GenericResponse genericResponse = new GenericResponse();
-        genericResponse.setMessage(ex.getMessage());
         return new ResponseEntity<>(
-                genericResponse.error(ex.getErrors()),
+                GenericResponse
+                        .builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .errors(ex.getErrors())
+                        .build(),
                 HttpStatus.BAD_REQUEST
         );
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<GenericResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
-        GenericResponse genericResponse = new GenericResponse();
         Map<String, String> errors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
-        return new ResponseEntity<>(genericResponse.error(errors), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(
+                GenericResponse
+                        .builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .errors(errors)
+                        .build(),
+                HttpStatus.BAD_REQUEST
+        );
     }
 }
