@@ -10,7 +10,10 @@ import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import com.example.sso.auth.AuthService;
 import com.example.sso.exceptions.ValidationException;
+import com.example.sso.role.Role;
+import com.example.sso.role.RoleService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final RoleService roleService;
+    private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
 
     public List<UserDTO> getUsers() {
@@ -28,11 +33,22 @@ public class UserService {
     }
 
     private UserDTO convertToDTO(User user) {
-        return new UserDTO(user.getId(), user.getName(), user.getEmail(), user.getDob(), user.getAge(), user.getRole());
+        return new UserDTO(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getDob(),
+                user.getAge(),
+                user.getRoles()
+        );
     }
 
-    public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email).get();
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
     }
 
     public User addNewUser(NewUserRequest newUserRequest) {
@@ -52,8 +68,23 @@ public class UserService {
                 .email(newUserRequest.getEmail())
                 .password(passwordEncoder.encode(newUserRequest.getPassword()))
                 .dob(newUserRequest.getDob())
-                .role(Role.USER)
+                .roles(roleService.getUserRoles())
                 .build();
+
+        return userRepository.save(user);
+    }
+
+    public User save(User user) {
+        Map<String, String> errors = new HashMap<>();
+        Optional<User> userByEmail = userRepository.findByEmail(user.getEmail());
+
+        if (userByEmail.isPresent()) {
+            errors.put("email", "Email is already taken");
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
 
         return userRepository.save(user);
     }
@@ -75,6 +106,19 @@ public class UserService {
                 throw new IllegalStateException("Email Taken");
             }
             user.setEmail(email);
+        }
+
+        List<Integer> roleIds = updateUserRequest.getRoleIds();
+        boolean isAdmin = authService.isAdmin();
+
+        if (isAdmin && roleIds != null && !roleIds.isEmpty()) {
+            List<Role> roles = roleService.findAllById(roleIds);
+            
+            if(! roles.stream().anyMatch(role-> role.getName().equals("ADMIN"))) {
+                throw new IllegalStateException("Admin cannot remove their own admin role");
+            }
+
+            user.setRoles(roles);
         }
 
         return user;

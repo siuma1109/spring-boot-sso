@@ -6,15 +6,17 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.sso.exceptions.ValidationException;
 import com.example.sso.jwt.JwtService;
 import com.example.sso.responses.GenericResponse;
-import com.example.sso.user.Role;
+import com.example.sso.role.RoleService;
 import com.example.sso.user.User;
 import com.example.sso.user.UserRepository;
 
@@ -25,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final RoleService roleService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -35,7 +38,7 @@ public class AuthService {
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .dob(registerRequest.getDob())
-                .role(Role.USER)
+                .roles(roleService.getUserRoles())
                 .build();
 
         Map<String, String> errors = new HashMap<>();
@@ -57,17 +60,30 @@ public class AuthService {
     }
 
     public GenericResponse login(AuthRequest authRequest) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        authRequest.getEmail(),
-                        authRequest.getPassword()
-                )
-        );
+        Map<String, String> errors = new HashMap<>();
+        Optional<User> user = userRepository.findByEmail(authRequest.getEmail());
 
-        User user = userRepository.findByEmail(authRequest.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        if (!user.isPresent()) {
+            errors.put("email", "User not found");
+        }
 
-        String jwtToken = jwtService.generateToken(user);
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            authRequest.getEmail(),
+                            authRequest.getPassword()
+                    )
+            );
+        } catch (BadCredentialsException e) {
+            errors.put("password", "Password incorrect");
+            throw new ValidationException(errors);
+        }
+
+        String jwtToken = jwtService.generateToken(user.get());
 
         return convertToGenericResponse(jwtToken);
     }
@@ -81,5 +97,10 @@ public class AuthService {
                 .success(true)
                 .data(data)
                 .build();
+    }
+
+    public boolean isAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
     }
 }

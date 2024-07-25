@@ -42,7 +42,7 @@ public class AuthControllerTests {
     @Test
     void shouldLoginUser() {
         AuthRequest authRequest = AuthRequest.builder()
-                .email("marco@example.com")
+                .email("admin@example.com")
                 .password("1234")
                 .build();
 
@@ -53,7 +53,7 @@ public class AuthControllerTests {
     @Test
     void shouldNotLoginUser() {
         AuthRequest authRequest = AuthRequest.builder()
-                .email("marco@example.com")
+                .email("admin@example.com")
                 .password("12345")
                 .build();
 

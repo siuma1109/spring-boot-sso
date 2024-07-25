@@ -4,21 +4,27 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.example.sso.role.Role;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -50,21 +56,27 @@ public class User implements UserDetails {
     private LocalDate dob;
     @Transient
     private Integer age;
-    @Enumerated(EnumType.STRING)
-    private Role role;
+    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "users_roles",
+            joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"),
+            uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "role_id"})
+    )
+    private List<Role> roles;
 
     public User(
             String name,
             String email,
             String password,
             LocalDate dob,
-            Role role
+            List<Role> roles
     ) {
         this.name = name;
         this.email = email;
         this.password = password;
         this.dob = dob;
-        this.role = role;
+        this.roles = roles;
     }
 
     public Integer getAge() {
@@ -73,7 +85,9 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.name()));
+        return roles.stream()
+                .map(role -> (GrantedAuthority) role::getName)
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -115,6 +129,7 @@ public class User implements UserDetails {
         sb.append(", email=").append(email);
         sb.append(", dob=").append(dob);
         sb.append(", age=").append(age);
+        sb.append(", roles=").append(roles);
         sb.append('}');
         return sb.toString();
     }

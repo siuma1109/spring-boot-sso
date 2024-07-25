@@ -23,17 +23,17 @@ public class GlobalExceptionHandler {
                         .success(false)
                         .message(ex.getMessage())
                         .build(),
-                HttpStatus.BAD_REQUEST
+                HttpStatus.FORBIDDEN
         );
     }
 
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<GenericResponse> handleAllExceptions(ValidationException ex) {
+    public ResponseEntity<GenericResponse> handleValidationExceptions(ValidationException ex) {
         return new ResponseEntity<>(
                 GenericResponse
                         .builder()
                         .success(false)
-                        .message(ex.getMessage())
+                        .message("Validation error")
                         .errors(ex.getErrors())
                         .build(),
                 HttpStatus.BAD_REQUEST
@@ -50,7 +50,7 @@ public class GlobalExceptionHandler {
                 GenericResponse
                         .builder()
                         .success(false)
-                        .message(ex.getMessage())
+                        .message("Validation error")
                         .errors(errors)
                         .build(),
                 HttpStatus.BAD_REQUEST

@@ -1,10 +1,15 @@
 package com.example.sso.user;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern.Flag;
+import lombok.Builder;
+import lombok.Data;
 
+@Builder
+@Data
 public class UpdateUserRequest {
 
     private String name;
@@ -16,46 +21,18 @@ public class UpdateUserRequest {
 
     private LocalDate dob;
 
+    private List<Integer> roleIds;
+
     public UpdateUserRequest(
             String name,
             String email,
             String password,
-            LocalDate dob) {
+            LocalDate dob,
+            List<Integer> roleIds) {
         this.name = name;
         this.email = email;
         this.password = password;
         this.dob = dob;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public LocalDate getDob() {
-        return dob;
-    }
-
-    public void setDob(LocalDate dob) {
-        this.dob = dob;
+        this.roleIds = roleIds;
     }
 }

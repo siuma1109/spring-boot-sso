@@ -1,6 +1,9 @@
 package com.example.sso.user;
 
 import java.time.LocalDate;
+import java.util.List;
+
+import com.example.sso.role.Role;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,5 +21,5 @@ public class UserDTO {
     private String email;
     private LocalDate dob;
     private Integer age;
-    private Role role;
+    private List<Role> role;
 }
