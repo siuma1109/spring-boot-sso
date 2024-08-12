@@ -1,4 +1,4 @@
-FROM gradle:jdk22 as builder
+FROM gradle:jdk22 AS builder
 WORKDIR /app
 COPY . .
 RUN ./gradlew clean build

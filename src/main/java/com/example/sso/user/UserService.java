@@ -7,6 +7,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -17,15 +19,20 @@ import com.example.sso.role.RoleService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
-@Component
+@Service
 public class UserService {
 
     private final UserRepository userRepository;
-    private final RoleService roleService;
-    private final AuthService authService;
-    private final PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private RoleService roleService;
+    @Autowired
+    private AuthService authService;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public List<UserDTO> getUsers() {
         List<User> users = userRepository.findAll();
@@ -113,8 +120,8 @@ public class UserService {
 
         if (isAdmin && roleIds != null && !roleIds.isEmpty()) {
             List<Role> roles = roleService.findAllById(roleIds);
-            
-            if(! roles.stream().anyMatch(role-> role.getName().equals("ADMIN"))) {
+
+            if (!roles.stream().anyMatch(role -> role.getName().equals("ADMIN"))) {
                 throw new IllegalStateException("Admin cannot remove their own admin role");
             }
 
