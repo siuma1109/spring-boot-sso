@@ -1,6 +1,7 @@
 FROM gradle:jdk22 AS builder
 WORKDIR /app
 COPY . .
+RUN chmod +x ./gradlew
 RUN ./gradlew clean build
 
 FROM openjdk:22-jdk
